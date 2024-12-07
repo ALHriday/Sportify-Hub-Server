@@ -48,9 +48,8 @@ async function run() {
             const query = { _id: new ObjectId(id) };
             const product = productCollection.find(query);
             const result = await product.toArray();
-            res.send(result);        
+            res.send(result);
         });
-
 
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
@@ -59,8 +58,6 @@ async function run() {
     }
 }
 run().catch(console.dir);
-
-
 
 
 app.get('/', async (req, res) => {
