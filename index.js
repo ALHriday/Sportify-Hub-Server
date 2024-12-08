@@ -87,7 +87,7 @@ run().catch(console.dir);
 
 
 app.get('/', async (req, res) => {
-    res.send('Hello World');
+    res.send('Sportify-Hub-Server');
 });
 
 app.listen(port, function () {
