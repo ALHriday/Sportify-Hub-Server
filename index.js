@@ -68,7 +68,15 @@ async function run() {
             const result = await productCollection.updateOne(filter, product, options);
             res.send(result); 
         });
+
+        app.delete('/products/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const product = await productCollection.deleteOne(query);
+            res.send(product);
+        });
         
+
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
