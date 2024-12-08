@@ -23,7 +23,6 @@ const client = new MongoClient(uri, {
     }
 });
 
-
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
@@ -46,11 +45,30 @@ async function run() {
         app.get('/products/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
-            const product = productCollection.find(query);
-            const result = await product.toArray();
-            res.send(result);
+            const product = await productCollection.findOne(query);
+            res.send(product);
         });
-
+        app.put('/products/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const options = { upsert: true };
+            const updateProduct = req.body;
+            const product = {
+                $set: {
+                    pName: updateProduct.pName,
+                    price: updateProduct.price,
+                    category: updateProduct.category,
+                    rating: updateProduct.rating,
+                    stockStatus: updateProduct.stockStatus,
+                    batWithExtraGrip: updateProduct.batWithExtraGrip,
+                    processingTime: updateProduct.processingTime,
+                    photoURL: updateProduct.photoURL
+                }
+            }
+            const result = await productCollection.updateOne(filter, product, options);
+            res.send(result); 
+        });
+        
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
