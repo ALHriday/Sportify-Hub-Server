@@ -26,6 +26,7 @@ async function run() {
     try {
         const db = client.db("sportifyHub");
         const productCollection = db.collection("products");
+        const cartItemCollection = db.collection("cartData");
 
         app.post('/products', async (req, res) => {
             const data = req.body;
@@ -43,6 +44,13 @@ async function run() {
             const product = await productCollection.findOne(query);
             res.send(product);
         });
+
+        app.get('/myEquipment/:email', async (req, res) => {
+            const email = req.params.email;
+            const equipments = await productCollection.find({email}).toArray();
+            res.send(equipments);
+        });
+        
         app.put('/products/:id', async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
@@ -69,6 +77,23 @@ async function run() {
             const query = { _id: new ObjectId(id) };
             const product = await productCollection.deleteOne(query);
             res.send(product);
+        });
+
+        app.post('/cartItem', async (req, res) => {
+            const data = req.body;
+            const p = await cartItemCollection.insertOne(data);
+            res.send(p);
+        });
+
+        app.get('/cartItem', async (req, res) => {
+            const p = await cartItemCollection.find().toArray();
+            res.send(p);
+        });
+
+        app.get('/cartItem/:userEmail', async (req, res) => {
+            const userEmail = req.params.userEmail;
+            const products = await cartItemCollection.find({userEmail}).toArray();
+            res.send(products);
         });
         
 
