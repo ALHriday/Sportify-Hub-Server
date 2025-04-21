@@ -1,13 +1,19 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 const port = process.env.PORT || 5500;
 const app = express();
 
-app.use(cors());
+app.use(cors({
+    origin: 'https://sportify-hub-web.netlify.app',
+    credentials: true,
+}));
 app.use(express.json());
+app.use(cookieParser());
 
 const user = process.env.DB_USER;
 const pass = process.env.DB_PASS;
@@ -28,6 +34,18 @@ async function run() {
         const productCollection = db.collection("products");
         const cartItemCollection = db.collection("cartData");
 
+        app.post('/jwt', (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.PrivateKey, { expiresIn: '1h' });
+
+            res.cookie('token', token, { httpOnly: true, secure: true });
+            res.send({ Success: true });
+        })
+        app.post('/logOut', (req, res) => {
+            res.clearCookie('token', { httpOnly: true, secure: false });
+            res.send({ Success: true });
+        })
+
         app.post('/products', async (req, res) => {
             const data = req.body;
             const p = await productCollection.insertOne(data);
@@ -36,7 +54,7 @@ async function run() {
         app.get('/products', async (req, res) => {
             const products = productCollection.find();
             const filter = await products.toArray();
-            res.send(filter);        
+            res.send(filter);
         });
         app.get('/products/:id', async (req, res) => {
             const id = req.params.id;
@@ -47,10 +65,10 @@ async function run() {
 
         app.get('/myEquipment/:email', async (req, res) => {
             const email = req.params.email;
-            const equipments = await productCollection.find({email}).toArray();
+            const equipments = await productCollection.find({ email }).toArray();
             res.send(equipments);
         });
-        
+
         app.put('/products/:id', async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
@@ -69,7 +87,7 @@ async function run() {
                 }
             }
             const result = await productCollection.updateOne(filter, product, options);
-            res.send(result); 
+            res.send(result);
         });
 
         app.delete('/products/:id', async (req, res) => {
@@ -92,10 +110,9 @@ async function run() {
 
         app.get('/cartItem/:userEmail', async (req, res) => {
             const userEmail = req.params.userEmail;
-            const products = await cartItemCollection.find({userEmail}).toArray();
+            const products = await cartItemCollection.find({ userEmail }).toArray();
             res.send(products);
         });
-        
 
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
