@@ -12,6 +12,7 @@ app.use(cors({
     origin: 'https://sportify-hub-web.netlify.app',
     credentials: true,
 }));
+
 app.use(express.json());
 app.use(cookieParser());
 
@@ -28,6 +29,24 @@ const client = new MongoClient(uri, {
     }
 });
 
+
+const verifyToken = (req, res, next) => {
+    const token = req.cookies?.token;
+    if (!token) {
+        return res.status(401).send({ message: 'unAuthorized Access' });
+    }
+
+    jwt.verify(token, process.env.PrivateKey, (err, decoded) => {
+
+        if (err) {
+            return res.status(401).send({ message: 'unAuthorized Access' });
+        }
+        req.user = decoded;
+        next();
+    })
+}
+
+
 async function run() {
     try {
         const db = client.db("sportifyHub");
@@ -36,11 +55,13 @@ async function run() {
 
         app.post('/jwt', (req, res) => {
             const user = req.body;
-            const token = jwt.sign(user, process.env.PrivateKey, { expiresIn: '1h' });
+            
+            const token = jwt.sign(user, process.env.PrivateKey, { expiresIn: '5h' });
 
             res.cookie('token', token, { httpOnly: true, secure: true });
             res.send({ Success: true });
         })
+
         app.post('/logOut', (req, res) => {
             res.clearCookie('token', { httpOnly: true, secure: false });
             res.send({ Success: true });
@@ -63,9 +84,13 @@ async function run() {
             res.send(product);
         });
 
-        app.get('/myEquipment/:email', async (req, res) => {
-            const email = req.params.email;
-            const equipments = await productCollection.find({ email }).toArray();
+        app.get('/myEquipment', verifyToken, async (req, res) => {
+            const { email } = req.query;
+            
+            if (req.user.user !== req.query.email) {
+                return res.status(403).send({ message: 'forbidden access' });
+            }
+            const equipments = await productCollection.find({email}).toArray();
             res.send(equipments);
         });
 
