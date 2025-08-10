@@ -32,7 +32,7 @@ const client = new MongoClient(uri, {
 
 const verifyToken = (req, res, next) => {
     const token = req.cookies?.token;
-    
+
     if (!token) {
         return res.status(401).send({ message: 'unAuthorized Access' });
     }
@@ -55,14 +55,14 @@ async function run() {
 
         app.post('/jwt', (req, res) => {
             const userInfo = req.body;
-            const token = jwt.sign(userInfo, process.env.PrivateKey, { expiresIn: '2h' });
+            const token = jwt.sign(userInfo, process.env.PrivateKey, { expiresIn: '1h' });
 
-            res.cookie('token', token, { httpOnly: true, secure: false });
+            res.cookie('token', token, { httpOnly: true, secure: false, sameSite: 'lax' });
             res.send({ Success: true });
         })
 
         app.post('/logOut', (req, res) => {
-            res.clearCookie('token', { httpOnly: true, secure: false });
+            res.clearCookie('token', { httpOnly: true, secure: false, sameSite: 'lax' });
             res.send({ Success: true });
         })
 
@@ -84,12 +84,12 @@ async function run() {
         });
 
         app.get('/myEquipment', verifyToken, async (req, res) => {
-            const { email } = req.query;        
-            
+            const { email } = req.query;
+
             if (req.userInfo.userInfo !== req.query?.email) {
                 return res.status(403).send({ message: 'forbidden access' });
             }
-            const equipments = await productCollection.find({email}).toArray();
+            const equipments = await productCollection.find({ email }).toArray();
             res.send(equipments);
         });
 
@@ -128,9 +128,33 @@ async function run() {
         });
 
         app.get('/cartItem', async (req, res) => {
-            const p = await cartItemCollection.find().toArray();
-            res.send(p);
+            const { pName } = req.query;
+
+            try {
+                if (pName) {
+                    const queryData = await cartItemCollection.find({pName}).toArray();
+                    res.send(queryData);
+                } else {
+                    const p = await cartItemCollection.find().toArray();
+                    res.send(p);
+                }
+            } catch(error) {
+                res.status(401).send({message: error.message});
+            }
         });
+
+        app.get('/cartItem/:id', async(req, res) => {
+            const id = req.params.id;
+            const query = {_id: new ObjectId(id)};
+            const data = await cartItemCollection.findOne(query);
+            res.send(data);
+        })
+        app.delete('/cartItem/:id', async(req, res) => {
+            const id = req.params.id;
+            const query = {_id: new ObjectId(id)};
+            const deleteItem = await cartItemCollection.deleteOne(query);
+            res.send(deleteItem);
+        })
 
         app.get('/cartItem/:userEmail', async (req, res) => {
             const userEmail = req.params.userEmail;
