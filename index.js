@@ -60,19 +60,12 @@ async function run() {
             const userInfo = req.body;
             const token = jwt.sign(userInfo, process.env.PrivateKey, { expiresIn: '1h' });
 
-            res.cookie('token', token, { httpOnly: true, secure: true, sameSite: 'lax'});
-            res.send({ Success: true });
-        })
-
-        app.post('/logIn', (req, res) => {
-            const userInfo = req.body; 
-            const token = jwt.sign(userInfo, process.env.PrivateKey, {expiresIn: '1h'});
-            res.cookie('token', token, {httpOnly: true, secure: true, sameSite: 'lax'});
+            res.cookie('token', token, { httpOnly: true, secure: false, sameSite: 'lax'});
             res.send({ Success: true });
         })
 
         app.post('/logOut', (req, res) => {
-            res.clearCookie('token', { httpOnly: true, secure: true, sameSite: 'lax' });
+            res.clearCookie('token', { httpOnly: true, secure: false, sameSite: 'lax' });
             res.send({ Success: true });
         })
 
