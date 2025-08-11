@@ -37,15 +37,18 @@ const verifyToken = (req, res, next) => {
         return res.status(401).send({ message: 'unAuthorized Access' });
     }
 
-    jwt.verify(token, process.env.PrivateKey, (err, decoded) => {
-        if (err) {
-            return res.status(401).send({ message: 'unAuthorized access' });
-        }
-        req.userInfo = decoded;
-        next();
-    })
+    try {
+        jwt.verify(token, process.env.PrivateKey, (err, decoded) => {
+            if (err) {
+                return res.status(401).send({ message: 'unAuthorized access' });
+            }
+            req.userInfo = decoded;
+            next();
+        })
+    } catch (error) {
+        console.error("JWT verification failed:", error.message);
+    }
 }
-
 
 async function run() {
     try {
@@ -86,7 +89,7 @@ async function run() {
         app.get('/myEquipment', verifyToken, async (req, res) => {
             const { email } = req.query;
 
-            if (req.userInfo.userInfo !== req.query?.email) {
+            if (req.userInfo.userInfo !== email) {
                 return res.status(403).send({ message: 'forbidden access' });
             }
             const equipments = await productCollection.find({ email }).toArray();
@@ -132,26 +135,26 @@ async function run() {
 
             try {
                 if (pName) {
-                    const queryData = await cartItemCollection.find({pName}).toArray();
+                    const queryData = await cartItemCollection.find({ pName }).toArray();
                     res.send(queryData);
                 } else {
                     const p = await cartItemCollection.find().toArray();
                     res.send(p);
                 }
-            } catch(error) {
-                res.status(401).send({message: error.message});
+            } catch (error) {
+                res.status(401).send({ message: error.message });
             }
         });
 
-        app.get('/cartItem/:id', async(req, res) => {
+        app.get('/cartItem/:id', async (req, res) => {
             const id = req.params.id;
-            const query = {_id: new ObjectId(id)};
+            const query = { _id: new ObjectId(id) };
             const data = await cartItemCollection.findOne(query);
             res.send(data);
         })
-        app.delete('/cartItem/:id', async(req, res) => {
+        app.delete('/cartItem/:id', async (req, res) => {
             const id = req.params.id;
-            const query = {_id: new ObjectId(id)};
+            const query = { _id: new ObjectId(id) };
             const deleteItem = await cartItemCollection.deleteOne(query);
             res.send(deleteItem);
         })
